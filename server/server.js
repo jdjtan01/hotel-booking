@@ -10,9 +10,11 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 // Middlewares
-app.use(clerkMiddleware()) //Clerk middleware
 app.use(cors()); //Enable Cross Origin Resource Sharing
 app.use(express.json())
+app.use(clerkMiddleware()) //Clerk middleware
+
+
 
 // API to listen to Clerk Webhook
 app.use("/api/clerk", clerkWebhooks)
