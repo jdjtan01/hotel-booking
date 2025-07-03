@@ -1,8 +1,12 @@
 import React, { useState } from 'react'
 import Title from '../../components/Title'
 import { assets } from '../../assets/assets'
+import { useAppContext } from '../../context/AppContext'
+import toast from 'react-hot-toast'
 
 const AddRoom = () => {
+
+  const {axios, getToken,} = useAppContext();
 
   const [images, setImages] = useState({
     1: null,
@@ -15,17 +19,73 @@ const AddRoom = () => {
     roomType: '',
     pricePerNight: 0,
     amenities: {
-      'Free Wifi': false,
+      'Free WiFi': false,
       'Free Breakfast': false,
       'Room Service': false,
       'Mountain View': false,
       'Pool Access': false,
-      'Gym Access': false,
     }
   })
 
+  const [loading, setLoading] = useState(false);
+
+  const onSubmitHandler = async () => {
+    event.preventDefault();
+    // Check if all inputs are filled
+    if(!inputs.roomType || !inputs.pricePerNight || !inputs.amenities || !Object.values(images).some(image => image)) {
+      toast.error("Please fill-in all the details");
+      return;
+    }
+    setLoading(true);
+    try {
+      const formData = new FormData();
+      formData.append('roomType', inputs.roomType);
+      formData.append('pricePerNight', inputs.pricePerNight);
+      // Converting amenities to array & keeping only enabled amenities
+      const amenities = Object.keys(inputs.amenities).filter(key => inputs.amenities[key]);
+      formData.append('amenities', JSON.stringify(amenities));
+
+      // Adding images to form data
+      Object.keys(images).forEach((key) => {
+        images[key] && formData.append('images', images[key])
+      });
+
+      const { data } = await axios.post('/api/rooms', formData, {headers: {Authorization: `Bearer ${await getToken()}`}});
+
+      if(data.success) {
+        toast.success(data.message)
+        setInputs({
+          roomType: '',
+          pricePerNight: 0,
+          amenities: {
+            'Free WiFi': false,
+            'Free Breakfast': false,
+            'Room Service': false,
+            'Mountain View': false,
+            'Pool Access': false,
+          }
+        });
+          setImages({
+            1: null,
+            2: null,
+            3: null,
+            4: null,
+          });
+      } else {
+        toast.error(data.message);
+      }
+
+    } catch (error) {
+      toast.error(error.message);
+    } finally {
+      setLoading(false);
+    }
+
+
+  }
+
   return (
-    <form>
+    <form onSubmit={onSubmitHandler}>
 
       <Title title="Add Room" subTitle="Fill in the details carefully with accurate room details, pricing, and amenities to enhance the user booking experience." align='left' font='outfit' />
 
@@ -71,7 +131,9 @@ const AddRoom = () => {
         ))}
       </div>
 
-      <button className='bg-primary text-white px-8 py-2 rounded mt-8 cursor-pointer'>Add Room</button>
+      <button className='bg-primary text-white px-8 py-2 rounded mt-8 cursor-pointer' disabled={loading}>
+        {loading? 'Adding...' : 'Add Room'}
+      </button>
 
     </form>
   )
